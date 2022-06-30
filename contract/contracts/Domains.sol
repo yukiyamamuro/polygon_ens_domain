@@ -9,7 +9,12 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import { StringUtils } from "./lib/StringUtils.sol";
 import { Base64 } from "./lib/Base64.sol";
 
+error Unauthorized();
+error AlreadyRegistered();
+error InvalidName(string name);
+
 contract Domains is ERC721URIStorage {
+  address payable public owner;
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
@@ -21,8 +26,10 @@ contract Domains is ERC721URIStorage {
 
   mapping(string => address) public domains;
   mapping(string => string) public records;
+  mapping (uint => string) public names;
 
-  constructor(string memory _tld) payable ERC721("Alpah Name Service", "ANS") {
+  constructor(string memory _tld) ERC721("Alpah Name Service", "ANS") payable {
+    owner = payable(msg.sender);
     tld = _tld;
     console.log("Domains initialized!");
   }
@@ -39,8 +46,14 @@ contract Domains is ERC721URIStorage {
     }
   }
 
+  function valid(string calldata name) public pure returns(bool) {
+    return StringUtils.strlen(name) >= 3 && StringUtils.strlen(name) <= 10;
+  }
+
   function register(string calldata name) public payable{
-    require(domains[name] == address(0));
+    if (domains[name] != address(0)) revert AlreadyRegistered();
+    if (!valid(name)) revert InvalidName(name);
+
 
     uint _price = price(name);
     require(msg.value >= _price, "Not enough Matic pid");
@@ -55,7 +68,7 @@ contract Domains is ERC721URIStorage {
       abi.encodePacked(
         '{"name": "',
         _name,
-        '", "description": "A domain on the Ninja name service", "image": "data:image/svg+xml;base64,',
+        '", "description": "A domain on the Alpha name service", "image": "data:image/svg+xml;base64,',
         Base64.encode(bytes(finalSvg)),
         '","length":"',
         strLen,
@@ -73,6 +86,7 @@ contract Domains is ERC721URIStorage {
     _setTokenURI(newRecordId, finalTokenUri);
     domains[name] = msg.sender;
 
+    names[newRecordId] = name;
     _tokenIds.increment();
   }
 
@@ -81,11 +95,36 @@ contract Domains is ERC721URIStorage {
   }
 
   function setRecord(string calldata name, string calldata record) public {
-    require(domains[name] == msg.sender);
+    if (msg.sender != domains[name]) revert Unauthorized();
     records[name] = record;
   }
 
   function getRecord(string calldata name) public view returns(string memory) {
     return records[name];
+  }
+
+  modifier onlyOwner() {
+    require(isOwner());
+    _;
+  }
+
+  function isOwner() public view returns (bool) {
+    return msg.sender == owner;
+  }
+
+  function withdraw() public onlyOwner {
+    uint amount = address(this).balance;
+
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success, "Failed to withdraw Matic");
+  }
+
+  function getAllNames() public view returns (string[] memory) {
+    string[] memory allNames = new string[](_tokenIds.current());
+    for (uint i = 0; i < _tokenIds.current(); i++) {
+      allNames[i] = names[i];
+    }
+
+    return allNames;
   }
 }
