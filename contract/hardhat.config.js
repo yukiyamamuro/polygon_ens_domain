@@ -26,8 +26,8 @@ module.exports = {
   solidity: "0.8.4",
   networks: {
     mumbai: {
-      url: "YOUR_ALCHEMY_MUMBAI_URL",
-      accounts: ["YOUR_TEST_WALLET_PRIVATE_KEY"],
+      url: "https://polygon-mumbai.g.alchemy.com/v2/HA5lhAlkN5gZK_W7XFuSx4361ODoFOPG",
+      accounts: ["f4ad37397d8465f545fc08bc49857db8c6659ef49eceff4b1e979be6ccfd1fb1"],
     },
   },
 };

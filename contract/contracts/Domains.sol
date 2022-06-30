@@ -28,7 +28,7 @@ contract Domains is ERC721URIStorage {
   mapping(string => string) public records;
   mapping (uint => string) public names;
 
-  constructor(string memory _tld) ERC721("Alpah Name Service", "ANS") payable {
+  constructor(string memory _tld) ERC721("Alpha Name Service V2", "ANS") payable {
     owner = payable(msg.sender);
     tld = _tld;
     console.log("Domains initialized!");
